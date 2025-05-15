@@ -4,12 +4,12 @@
 protected_branches=("main" "develop")
 
 # Get the current branch
-current_branch=main
+current_branch=feature/scripts
 
 # Check if current branch is in the list
-for branch in ""; do
-  if [[ "" == "" ]]; then
-    echo "❌ You cannot commit directly to ''. Switch to a feature or hotfix branch."
+for branch in "${protected_branches[@]}"; do
+  if [[ "${current_branch}" == "${branch}" ]]; then
+    echo "❌ You cannot commit directly to '${current_branch}'. Switch to a feature or hotfix branch."
     exit 1
   fi
 done

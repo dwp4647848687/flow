@@ -67,9 +67,9 @@ protected_branches=("main" "develop")
 current_branch=$(git symbolic-ref --short HEAD)
 
 # Check if current branch is in the list
-for branch in "${protected_branches[@]}"; do
-  if [[ "$current_branch" == "$branch" ]]; then
-    echo "❌ You cannot commit directly to '$current_branch'. Switch to a feature or hotfix branch."
+for branch in "\${protected_branches[@]}"; do
+  if [[ "\${current_branch}" == "\${branch}" ]]; then
+    echo "❌ You cannot commit directly to '\${current_branch}'. Switch to a feature or hotfix branch."
     exit 1
   fi
 done
