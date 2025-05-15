@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# List of protected branches
+protected_branches=("main" "develop")
+
+# Get the current branch
+current_branch=main
+
+# Check if current branch is in the list
+for branch in ""; do
+  if [[ "" == "" ]]; then
+    echo "❌ You cannot commit directly to ''. Switch to a feature or hotfix branch."
+    exit 1
+  fi
+done
+
+exit 0
