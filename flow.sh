@@ -66,7 +66,13 @@ show_command_help() {
 }
 
 # Get the directory where the script is located
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+if [ -L "$0" ]; then
+    # If the script is a symlink, resolve it
+    SCRIPT_DIR="$( cd "$( dirname "$(readlink -f "$0")" )" &> /dev/null && pwd )"
+else
+    # If the script is not a symlink
+    SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+fi
 
 # Main command processing
 case "$1" in

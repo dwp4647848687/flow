@@ -30,8 +30,19 @@ ln -sf "$INSTALL_DIR/flow.sh" "$BIN_DIR/flow"
 
 # Copy scripts directory
 echo "Installing supporting scripts..."
-cp -r scripts/* "$SCRIPTS_DIR/"
-chmod -R 755 "$SCRIPTS_DIR"
+if [ -d "scripts" ]; then
+    cp -r scripts/* "$SCRIPTS_DIR/"
+    chmod -R 755 "$SCRIPTS_DIR"
+else
+    echo "Error: scripts directory not found!"
+    exit 1
+fi
+
+# Verify installation
+if [ ! -f "$SCRIPTS_DIR/do_release.sh" ]; then
+    echo "Error: Required script files not found in $SCRIPTS_DIR"
+    exit 1
+fi
 
 echo "Installation complete!"
 echo "You can now use the 'flow' command from anywhere."
