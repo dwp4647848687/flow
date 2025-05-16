@@ -34,7 +34,7 @@ fi
 read -p "Enter the name of the new hotfix: " hotfix_name
 
 # Check that the hotfix name is valid
-if [[ "$hotfix_name" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+if ![[ "$hotfix_name" =~ ^[a-zA-Z0-9_-]+$ ]]; then
     echo "Error: Hotfix name must contain only alphanumeric characters, underscores, or hyphens."
     exit 1
 fi
