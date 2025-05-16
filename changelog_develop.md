@@ -4,3 +4,4 @@
 - bug Fix
 - Improvements to error handling
 - Split release process into begin and complete commands
+- Rebase before feature/hotfix completion to avoid merge conflicts

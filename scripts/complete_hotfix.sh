@@ -65,6 +65,13 @@ else
     branch_name=$current_branch
 fi
 
+# Rebase the hotfix branch from the latest main
+echo "Rebasing hotfix branch from latest main..."
+git checkout main || exit 1
+git pull || exit 1
+git checkout $branch_name || exit 1
+git rebase main || exit 1
+
 # Read the version number from the file as integers
 version_major=$(jq '.major' version.json)
 version_minor=$(jq '.minor' version.json)

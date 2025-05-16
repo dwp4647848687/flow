@@ -90,9 +90,10 @@ flow feature complete # Finish a feature
 - Automatically switches to the new branch
 
 **Completing a Feature:**
-- Merges the feature branch into `develop`
 - Prompts for feature description
+- Rebases feature from the latest `develop`
 - Updates the development changelog
+- Merges the feature branch into `develop`
 - Cleans up the feature branch
 
 #### Hotfix Management
@@ -107,10 +108,11 @@ flow hotfix complete # Finish a hotfix
 - Automatically switches to the new branch
 
 **Completing a Hotfix**
-- Merges the hotfix branch into both `main` and `develop`
 - Prompts for hotfix description
+- Rebases hotfix from the latest `main`
 - Increments the version patch number
 - Updates the release changelog
+- Merges the hotfix branch into both `main` and `develop`
 - Cleans up the hotfix branch
 
 #### Release Management
