@@ -6,11 +6,6 @@ A command-line tool that simplifies following the Git Flow branching model. Flow
 
 Flow provides a simple interface for managing Git Flow operations, ensuring consistent branching patterns across your team. It automatically handles branch creation, merging, and changelog management while preventing direct commits to protected branches.
 
-## Prerequisites
-
-- Git 2.0 or higher
-- Unix-like operating system (macOS, Linux)
-
 ## Installation
 
 ### Prerequisites
