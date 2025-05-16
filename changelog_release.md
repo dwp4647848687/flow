@@ -7,3 +7,5 @@
 - Improvements to error handling in action scripts
 - Split release process into begin and complete actions
 - Rebase before feature/hotfix completion to avoid merge conflicts
+## v0.2.1
+- Removed duplicate section in README
