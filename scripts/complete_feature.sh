@@ -59,6 +59,12 @@ else
     branch_name=$current_branch
 fi
 
+# Rebase the feature branch from the latest develop
+echo "Rebasing feature branch from latest develop..."
+git checkout develop || exit 1
+git pull || exit 1
+git checkout $branch_name || exit 1
+git rebase develop || exit 1
 
 # Get description of the feature from the user
 read -p "Enter a description of the feature to be added to the changelog: " feature_description
