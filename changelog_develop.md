@@ -1,0 +1,1 @@
+- Fixed bug causing problems if flow was not run from the repo root directory
