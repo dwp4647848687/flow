@@ -115,12 +115,25 @@ flow hotfix complete # Finish a hotfix
 
 #### Release Management
 ```bash
-flow release
+flow release begin    # Start a new release
+flow release complete # Finish a release
 ```
-- Creates a temporary release branch from `develop`
-- Prompts for whether this is a major or minor release, incrementing the appropriate version number
-- Inserts changes in the active development changelog into release changelog
-- Merges changes into `main`
+
+**Starting a Release:**
+- Creates a new release branch from `develop`
+- Prompts for whether this is a major or minor release
+- Increments the appropriate version number
+- Moves changes from the development changelog to the release changelog
+- Creates an initial commit with version and changelog updates
+
+**Completing a Release:**
+- Merges the release branch into both `main` and `develop`
+- Creates and pushes a version tag
+- Cleans up the release branch
+
+The two-step release process allows for:
+- Review of changelog changes before finalizing
+- Additional commits to the release branch if needed
 
 ### Branch Naming
 
