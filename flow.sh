@@ -71,13 +71,20 @@ show_command_help() {
     esac
 }
 
+print_version() {
+    version_major=$(jq -r '.major' "$INSTALL_DIR/version.json")
+    version_minor=$(jq -r '.minor' "$INSTALL_DIR/version.json")
+    version_patch=$(jq -r '.patch' "$INSTALL_DIR/version.json")
+    echo "Flow v$version_major.$version_minor.$version_patch"
+}
+
 # Get the directory where the script is located
 if [ -L "$0" ]; then
     # If the script is a symlink, resolve it
-    SCRIPT_DIR="$( cd "$( dirname "$(readlink -f "$0")" )" &> /dev/null && pwd )"
+    INSTALL_DIR="$( cd "$( dirname "$(readlink -f "$0")" )" &> /dev/null && pwd )"
 else
     # If the script is not a symlink
-    SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+    INSTALL_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 fi
 
 # Set working directory to repository root
@@ -91,15 +98,15 @@ cd "$REPO_ROOT"
 # Main command processing
 case "$1" in
     "init")
-        "$SCRIPT_DIR/scripts/initialise.sh"
+        "$INSTALL_DIR/scripts/initialise.sh"
         ;;
     "feature")
         case "$2" in
             "begin")
-                "$SCRIPT_DIR/scripts/begin_feature.sh"
+                "$INSTALL_DIR/scripts/begin_feature.sh"
                 ;;
             "complete")
-                "$SCRIPT_DIR/scripts/complete_feature.sh"
+                "$INSTALL_DIR/scripts/complete_feature.sh"
                 ;;
             *)
                 echo "Error: Unknown feature command. Use 'flow help feature' for usage information."
@@ -110,10 +117,10 @@ case "$1" in
     "hotfix")
         case "$2" in
             "begin")
-                "$SCRIPT_DIR/scripts/begin_hotfix.sh"
+                "$INSTALL_DIR/scripts/begin_hotfix.sh"
                 ;;
             "complete")
-                "$SCRIPT_DIR/scripts/complete_hotfix.sh"
+                "$INSTALL_DIR/scripts/complete_hotfix.sh"
                 ;;
             *)
                 echo "Error: Unknown hotfix command. Use 'flow help hotfix' for usage information."
@@ -124,10 +131,10 @@ case "$1" in
     "release")
         case "$2" in
             "begin")
-                "$SCRIPT_DIR/scripts/begin_release.sh"
+                "$INSTALL_DIR/scripts/begin_release.sh"
                 ;;
             "complete")
-                "$SCRIPT_DIR/scripts/complete_release.sh"
+                "$INSTALL_DIR/scripts/complete_release.sh"
                 ;;
         esac
         ;;
@@ -137,6 +144,9 @@ case "$1" in
         else
             show_command_help "$2"
         fi
+        ;;
+    "--version")
+        print_version
         ;;
     *)
         show_help
