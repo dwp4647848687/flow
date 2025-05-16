@@ -12,7 +12,7 @@ if [[ $current_branch != "hotfix/"* ]]; then
     read -p "Not on a hotfix branch, enter the name of the hotfix branch to complete: " hotfix_name
     git checkout hotfix/$hotfix_name
 else
-    hotfix_name=$(basename $current_branch)
+    hotfix_name=${current_branch#*/}
 fi
 
 # Read the version number from the file as integers
