@@ -80,6 +80,14 @@ else
     SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 fi
 
+# Set working directory to repository root
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
+if [ $? -ne 0 ]; then
+    echo "Error: Not in a Git repository"
+    exit 1
+fi
+cd "$REPO_ROOT"
+
 # Main command processing
 case "$1" in
     "init")
