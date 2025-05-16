@@ -1,1 +1,2 @@
 - Fixed bug causing problems if flow was not run from the repo root directory
+- Added a command to print the current version of flow
