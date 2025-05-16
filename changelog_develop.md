@@ -1,2 +1,4 @@
 - Added a readme with basic usage description
 - Added a central cli script and install script
+- Fix bug where amin script is unable to locate command scripts
+- bug Fix

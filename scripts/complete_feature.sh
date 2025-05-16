@@ -12,7 +12,7 @@ if [[ $current_branch != "feature/"* ]]; then
     read -p "Not on a feature branch, enter the name of the feature branch to complete: " feature_name
     git checkout feature/$feature_name
 else
-    feature_name=$(basename $current_branch)
+    feature_name=${current_branch#*/}
 fi
 
 # Get description of the feature from the user
