@@ -1,5 +1,59 @@
 #! /bin/bash
 
+# Exit on any error
+set -e
+
+# Store the initial state
+initial_branch=$(git branch --show-current)
+initial_version=$(cat version.json 2>/dev/null || echo "")
+initial_release_changelog=$(cat changelog_release.md 2>/dev/null || echo "")
+initial_develop_changelog=$(cat changelog_develop.md 2>/dev/null || echo "")
+
+# Function to clean up on error
+cleanup() {
+    if [ $? -ne 0 ]; then
+        echo "Error occurred. Cleaning up..."
+        
+        # Restore version file if it was modified
+        if [ -f version.json ]; then
+            echo "$initial_version" > version.json
+        fi
+        
+        # Restore changelogs if they were modified
+        if [ -f changelog_release.md ]; then
+            echo "$initial_release_changelog" > changelog_release.md
+        fi
+        if [ -f changelog_develop.md ]; then
+            echo "$initial_develop_changelog" > changelog_develop.md
+        fi
+        
+        # Abort any in-progress merge
+        git merge --abort 2>/dev/null || true
+        
+        # If we switched branches, go back to the original
+        if [ "$(git branch --show-current)" != "$initial_branch" ]; then
+            git checkout $initial_branch
+        fi
+        
+        # If we created a release branch, delete it
+        if [ -n "$release_branch" ]; then
+            git branch -D $release_branch 2>/dev/null || true
+            git push origin --delete $release_branch 2>/dev/null || true
+        fi
+        
+        # If we created a tag, delete it
+        if [ -n "$version_major" ] && [ -n "$version_minor" ] && [ -n "$version_patch" ]; then
+            git tag -d "v$version_major.$version_minor.$version_patch" 2>/dev/null || true
+            git push origin --delete "v$version_major.$version_minor.$version_patch" 2>/dev/null || true
+        fi
+        
+        exit 1
+    fi
+}
+
+# Set up error handling
+trap cleanup EXIT
+
 # Check that there are no uncommitted changes
 if ! git diff --quiet; then
     echo "Error: There are uncommitted changes in the repository."
@@ -7,8 +61,8 @@ if ! git diff --quiet; then
 fi
 
 # Move to the develop branch
-git checkout develop
-git pull
+git checkout develop || exit 1
+git pull || exit 1
 
 # Ask the user if this is a major or minor release
 while true; do
@@ -29,6 +83,12 @@ version_major=$(jq '.major' version.json)
 version_minor=$(jq '.minor' version.json)
 version_patch=$(jq '.patch' version.json)
 
+# Validate version numbers
+if ! [[ "$version_major" =~ ^[0-9]+$ ]] || ! [[ "$version_minor" =~ ^[0-9]+$ ]] || ! [[ "$version_patch" =~ ^[0-9]+$ ]]; then
+    echo "Error: Invalid version numbers in version.json"
+    exit 1
+fi
+
 # Increment the version number based on the release type
 if [ "$release_type" = "major" ]; then
     version_major=$((version_major + 1))
@@ -42,8 +102,9 @@ fi
 echo "This will be version $version_major.$version_minor.$version_patch"
 
 # Create a temporary release branch
-git checkout -b release/$version_major.$version_minor.$version_patch
-git push --set-upstream origin release/$version_major.$version_minor.$version_patch
+release_branch="release/$version_major.$version_minor.$version_patch"
+git checkout -b $release_branch || exit 1
+git push --set-upstream origin $release_branch || exit 1
 
 # Write the new version numbers to the file
 cat > version.json << EOF
@@ -60,33 +121,36 @@ cat >> changelog_release.md << EOF
 EOF
 
 # Add all the changes from the develop changelog to the release changelog
-cat changelog_develop.md >> changelog_release.md
+cat changelog_develop.md >> changelog_release.md || exit 1
 
 # Clear the develop changelog
 cat > changelog_develop.md << EOF
 EOF
 
 # Commit the changelog and version.json file
-git add changelog_release.md changelog_develop.md version.json
-git commit -m "Update changelog and version number for release $version_major.$version_minor.$version_patch"
-git push
+git add changelog_release.md changelog_develop.md version.json || exit 1
+git commit -m "Update changelog and version number for release $version_major.$version_minor.$version_patch" || exit 1
+git push || exit 1
 
 # Merge the release branch into the main branch
-git checkout main
-git pull
-git merge --no-ff release/$version_major.$version_minor.$version_patch -m "Merge release $version_major.$version_minor.$version_patch into main"
-git push
+git checkout main || exit 1
+git pull || exit 1
+git merge --no-ff $release_branch -m "Merge release $version_major.$version_minor.$version_patch into main" || exit 1
+git push || exit 1
 
 # Create and push a tag for the release
-git tag -a "v$version_major.$version_minor.$version_patch" -m "Release v$version_major.$version_minor.$version_patch"
-git push origin "v$version_major.$version_minor.$version_patch"
+git tag -a "v$version_major.$version_minor.$version_patch" -m "Release v$version_major.$version_minor.$version_patch" || exit 1
+git push origin "v$version_major.$version_minor.$version_patch" || exit 1
 
 # Merge the release branch into the develop branch
-git checkout develop
-git pull
-git merge --no-ff release/$version_major.$version_minor.$version_patch -m "Merge release $version_major.$version_minor.$version_patch into develop"
-git push
+git checkout develop || exit 1
+git pull || exit 1
+git merge --no-ff $release_branch -m "Merge release $version_major.$version_minor.$version_patch into develop" || exit 1
+git push || exit 1
 
 # Delete the release branch
-git branch -d release/$version_major.$version_minor.$version_patch
-git push origin --delete release/$version_major.$version_minor.$version_patch
+git branch -d $release_branch || exit 1
+git push origin --delete $release_branch || exit 1
+
+# If we get here, everything succeeded
+echo "Successfully completed release: v$version_major.$version_minor.$version_patch"
