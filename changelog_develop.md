@@ -1,1 +1,2 @@
 - Added a readme with basic usage description
+- Added a central cli script and install script
