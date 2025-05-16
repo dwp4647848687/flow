@@ -13,9 +13,51 @@ Flow provides a simple interface for managing Git Flow operations, ensuring cons
 
 ## Installation
 
+### Prerequisites
+- Git 2.0 or higher
+- Unix-like operating system (macOS, Linux)
+- Root/sudo access for system-wide installation
+
+### Quick Install
 ```bash
-# Installation instructions will be added here
+# Clone the repository
+git clone https://github.com/yourusername/flow.git
+cd flow
+
+# Run the installation script
+sudo ./install.sh
 ```
+
+### What Gets Installed
+The installation script will:
+- Install Flow to `/usr/local/lib/flow`
+- Create a symlink in `/usr/local/bin` for global access
+- Set up all required scripts with proper permissions
+
+### Verification
+After installation, verify it works by running:
+```bash
+flow --help
+```
+
+### Git Hooks Configuration
+When cloning an existing repository that uses Flow, you need to manually configure Git hooks to prevent direct commits to protected branches:
+```bash
+git config core.hooksPath .githooks
+```
+This ensures that the pre-commit hook is properly set up to protect the `main` and `develop` branches from direct commits.
+
+### Uninstallation
+To remove Flow from your system:
+```bash
+sudo rm -rf /usr/local/lib/flow /usr/local/bin/flow
+```
+
+### Troubleshooting
+If you encounter permission issues:
+1. Ensure you're using `sudo` for installation
+2. Verify you have write permissions to `/usr/local`
+3. Check that the installation script is executable (`chmod +x install.sh`)
 
 ## Usage
 
@@ -79,3 +121,23 @@ flow release
 - Prompts for whether this is a major or minor release, incrementing the appropriate version number
 - Inserts changes in the active development changelog into release changelog
 - Merges changes into `main`
+
+### Branch Naming
+
+All branches follow a consistent naming pattern:
+
+- Feature branches: `feature/<name>`
+- Hotfix branches: `hotfix/<name>`
+- Release branches: `release/<version>`
+
+Branch names should:
+- Use only alphanumeric characters, underscores, and hyphens
+- Be descriptive but concise
+- Not contain spaces or special characters
+
+Examples:
+```bash
+feature/user-authentication
+hotfix/login-crash
+release/1.2.0
+```
