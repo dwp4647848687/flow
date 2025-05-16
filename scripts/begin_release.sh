@@ -41,12 +41,6 @@ cleanup() {
             git push origin --delete $release_branch 2>/dev/null || true
         fi
         
-        # If we created a tag, delete it
-        if [ -n "$version_major" ] && [ -n "$version_minor" ] && [ -n "$version_patch" ]; then
-            git tag -d "v$version_major.$version_minor.$version_patch" 2>/dev/null || true
-            git push origin --delete "v$version_major.$version_minor.$version_patch" 2>/dev/null || true
-        fi
-        
         exit 1
     fi
 }
@@ -132,25 +126,4 @@ git add changelog_release.md changelog_develop.md version.json || exit 1
 git commit -m "Update changelog and version number for release $version_major.$version_minor.$version_patch" || exit 1
 git push || exit 1
 
-# Merge the release branch into the main branch
-git checkout main || exit 1
-git pull || exit 1
-git merge --no-ff $release_branch -m "Merge release $version_major.$version_minor.$version_patch into main" || exit 1
-git push || exit 1
-
-# Create and push a tag for the release
-git tag -a "v$version_major.$version_minor.$version_patch" -m "Release v$version_major.$version_minor.$version_patch" || exit 1
-git push origin "v$version_major.$version_minor.$version_patch" || exit 1
-
-# Merge the release branch into the develop branch
-git checkout develop || exit 1
-git pull || exit 1
-git merge --no-ff $release_branch -m "Merge release $version_major.$version_minor.$version_patch into develop" || exit 1
-git push || exit 1
-
-# Delete the release branch
-git branch -d $release_branch || exit 1
-git push origin --delete $release_branch || exit 1
-
-# If we get here, everything succeeded
-echo "Successfully completed release: v$version_major.$version_minor.$version_patch"
+echo "Successfully began release: v$version_major.$version_minor.$version_patch"

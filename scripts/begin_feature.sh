@@ -34,7 +34,7 @@ fi
 read -p "Enter the name of the new feature: " feature_name
 
 # Check that the feature name is valid
-if [[ "$feature_name" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+if ![[ "$feature_name" =~ ^[a-zA-Z0-9_-]+$ ]]; then
     echo "Error: Feature name must contain only alphanumeric characters, underscores, or hyphens."
     exit 1
 fi

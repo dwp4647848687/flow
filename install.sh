@@ -39,7 +39,7 @@ else
 fi
 
 # Verify installation
-if [ ! -f "$SCRIPTS_DIR/do_release.sh" ]; then
+if [ ! -f "$SCRIPTS_DIR/complete_release.sh" ]; then
     echo "Error: Required script files not found in $SCRIPTS_DIR"
     exit 1
 fi

@@ -15,7 +15,8 @@ show_help() {
     echo "  feature complete      Complete a feature"
     echo "  hotfix begin          Start a new hotfix"
     echo "  hotfix complete       Complete a hotfix"
-    echo "  release               Create a new release"
+    echo "  release begin         Start a new release"
+    echo "  release complete      Complete a release"
     echo
     echo "For more information about a command, use: flow help <command>"
 }
@@ -53,11 +54,16 @@ show_command_help() {
             echo "- Updates the release changelog"
             ;;
         "release")
-            echo "flow release"
-            echo "Creates a new release:"
-            echo "- Merges changes from develop into main"
+            echo "flow release begin"
+            echo "Starts a new release:"
+            echo "- Creates a new release branch"
             echo "- Prompts for version increment type"
             echo "- Updates changelogs"
+            echo
+            echo "flow release complete"
+            echo "Completes a release:"
+            echo "- Merges the release branch into main and develop"
+            echo "- Creates a new tag"
             ;;
         *)
             show_help
@@ -108,7 +114,14 @@ case "$1" in
         esac
         ;;
     "release")
-        "$SCRIPT_DIR/scripts/do_release.sh"
+        case "$2" in
+            "begin")
+                "$SCRIPT_DIR/scripts/begin_release.sh"
+                ;;
+            "complete")
+                "$SCRIPT_DIR/scripts/complete_release.sh"
+                ;;
+        esac
         ;;
     "help")
         if [ -z "$2" ]; then
