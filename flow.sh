@@ -78,6 +78,24 @@ print_version() {
     echo "Flow v$version_major.$version_minor.$version_patch"
 }
 
+# Check that git is installed
+if ! command -v git &> /dev/null; then
+    echo "Error: git is not installed. Please install it using your package manager."
+    exit 1
+fi
+
+# Check that jq is installed
+if ! command -v jq &> /dev/null; then
+    echo "Error: jq is not installed. Please install it using your package manager."
+    exit 1
+fi
+
+# Check that the Github CLI is installed
+if ! command -v gh &> /dev/null; then
+    echo "Error: GitHub CLI (gh) is not installed. Please install it using your package manager."
+    exit 1
+fi
+
 # Get the directory where the script is located
 if [ -L "$0" ]; then
     # If the script is a symlink, resolve it
