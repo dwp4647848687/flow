@@ -3,20 +3,32 @@
 # Exit on any error
 set -e
 
+# Operation history for robust cleanup
+operation_history=()
+commit_pushed=0
+
 # Function to clean up on error
 cleanup() {
     if [ $? -ne 0 ]; then
         echo "Error occurred. Cleaning up..."
-        
-        # Abort any in-progress merge
-        git merge --abort 2>/dev/null || true
-        
-        # If we created a tag, delete it
-        if [ -n "$version_major" ] && [ -n "$version_minor" ] && [ -n "$version_patch" ]; then
-            git tag -d "v$version_major.$version_minor.$version_patch" 2>/dev/null || true
-            git push origin --delete "v$version_major.$version_minor.$version_patch" 2>/dev/null || true
-        fi
-        
+        for (( idx=${#operation_history[@]}-1 ; idx>=0 ; idx-- )) ; do
+            op="${operation_history[$idx]}"
+            case $op in
+                warn_push)
+                    if [ $commit_pushed -eq 1 ]; then
+                        echo "Reverting to the commit before the push..."
+                        git reset --hard HEAD^
+                        git push --force-with-lease || echo "Warning: force-push failed. Manual intervention may be required."
+                        echo "Force-pushed branch to remove last commit from remote."
+                    else
+                        echo "Warning: git push was performed. Manual intervention may be required to undo remote changes."
+                    fi
+                    ;;
+                warn_pr_main)
+                    echo "Warning: Pull request was created for main. Please close it manually if not needed."
+                    ;;
+            esac
+        done
         exit 1
     fi
 }
@@ -51,24 +63,20 @@ if ! [[ "$version_major" =~ ^[0-9]+$ ]] || ! [[ "$version_minor" =~ ^[0-9]+$ ]] 
     exit 1
 fi
 
-# Merge the release branch into the main branch
-git checkout main || exit 1
-git pull || exit 1
-git merge --no-ff $current_branch -m "Merge release $version_major.$version_minor.$version_patch into main" || exit 1
+# Push the release branch
+# (Assume any changes have already been committed)
 git push || exit 1
+operation_history+=(warn_push)
+commit_pushed=1
 
-# Create and push a tag for the release
-git tag -a "v$version_major.$version_minor.$version_patch" -m "Release v$version_major.$version_minor.$version_patch" || exit 1
-git push origin "v$version_major.$version_minor.$version_patch" || exit 1
+# Create a pull request from the release branch to main
+pr_title="Release v$version_major.$version_minor.$version_patch"
+pr_body="Automated PR for release v$version_major.$version_minor.$version_patch"
+gh pr create --base main --head $current_branch --title "$pr_title" --body "$pr_body" || exit 1
+operation_history+=(warn_pr_main)
 
-# Merge the release branch into the develop branch
-git checkout develop || exit 1
-git pull || exit 1
-git merge --no-ff $current_branch -m "Merge release $version_major.$version_minor.$version_patch into develop" || exit 1
-git push || exit 1
+# Inform the user
 
-# Delete the release branch
-git branch -d $current_branch || exit 1
-git push origin --delete $current_branch || exit 1
-
-echo "Successfully completed release: v$version_major.$version_minor.$version_patch" 
+echo "Pull request created for release: v$version_major.$version_minor.$version_patch."
+echo "After the PR is merged into main, create the tag and delete the release branch as appropriate."
+echo "Successfully completed release: v$version_major.$version_minor.$version_patch (PR created)" 
