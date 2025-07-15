@@ -167,6 +167,8 @@ case "$1" in
         print_version
         ;;
     *)
+        echo "Error: Unknown command: $1"
+        echo
         show_help
         exit 1
         ;;
