@@ -100,7 +100,21 @@ echo "Rebasing hotfix branch from latest main..."
 git checkout main || exit 1
 git pull || exit 1
 git checkout $branch_name || exit 1
-git rebase main || exit 1
+rebased=false
+git rebase main || {
+    echo "Merge conflicts detected during rebase. Please resolve them manually."
+    while true; do
+        echo "Press Enter when you have resolved all conflicts and completed the rebase."
+        read -p ""
+        # Check if rebase is still in progress
+        if [ -d ".git/rebase-merge" ] || [ -d ".git/rebase-apply" ]; then
+            echo "Rebase is still in progress. Please complete it before continuing."
+        else
+            rebased=true
+            break
+        fi
+    done
+}
 operation_history+=(checkout_original_branch)
 
 # Read the version number from the file as integers
@@ -136,7 +150,11 @@ git add changelog_release.md version.json || exit 1
 git commit -m "Update changelog and version number for hotfix $hotfix_name" || exit 1
 operation_history+=(reset_commit)
 
-git push || exit 1
+if [ $rebased = true ]; then
+    git push --force-with-lease || exit 1
+else
+    git push || exit 1
+fi
 operation_history+=(warn_push)
 commit_pushed=1
 

@@ -88,7 +88,21 @@ echo "Rebasing feature branch from latest develop..."
 git checkout develop || exit 1
 git pull || exit 1
 git checkout $branch_name || exit 1
-git rebase develop || exit 1
+rebased=false
+git rebase develop || {
+    echo "Merge conflicts detected during rebase. Please resolve them manually."
+    while true; do
+        echo "Press Enter when you have resolved all conflicts and completed the rebase."
+        read -p ""
+        # Check if rebase is still in progress
+        if [ -d ".git/rebase-merge" ] || [ -d ".git/rebase-apply" ]; then
+            echo "Rebase is still in progress. Please complete it before continuing."
+        else
+            rebased=true
+            break
+        fi
+    done
+}
 operation_history+=(checkout_original_branch)
 
 # Get description of the feature from the user
@@ -106,7 +120,11 @@ git commit -m "Update changelog for feature $feature_name" || exit 1
 operation_history+=(reset_commit)
 
 # Push the branch and mark that a commit was pushed
-git push || exit 1
+if [ $rebased = true ]; then
+    git push --force-with-lease || exit 1
+else
+    git push || exit 1
+fi
 operation_history+=(warn_push)
 commit_pushed=1
 
