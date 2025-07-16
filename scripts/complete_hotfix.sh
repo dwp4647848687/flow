@@ -8,39 +8,68 @@ initial_branch=$(git branch --show-current)
 initial_changelog=$(cat changelog_release.md 2>/dev/null || echo "")
 initial_version=$(cat version.json 2>/dev/null || echo "")
 
+# Operation history for robust cleanup
+operation_history=()
+commit_pushed=0
+pr_url=""
+pr_number=""
+
 # Function to clean up on error
 cleanup() {
     if [ $? -ne 0 ]; then
         echo "Error occurred. Cleaning up..."
-        
-        # Restore changelog if it was modified
-        if [ -f changelog_release.md ]; then
-            echo "$initial_changelog" > changelog_release.md
-        fi
-        
-        # Restore version file if it was modified
-        if [ -f version.json ]; then
-            echo "$initial_version" > version.json
-        fi
-        
-        # Abort any in-progress merge
-        git merge --abort 2>/dev/null || true
-        
-        # If we switched branches, go back to the original
-        if [ "$(git branch --show-current)" != "$initial_branch" ]; then
-            git checkout $initial_branch
-        fi
-        
-        # If we created a commit, try to reset it
-        if [ -n "$hotfix_name" ]; then
-            git reset --hard HEAD^ 2>/dev/null || true
-        fi
-        
+        for (( idx=${#operation_history[@]}-1 ; idx>=0 ; idx-- )) ; do
+            op="${operation_history[$idx]}"
+            case $op in
+                restore_changelog)
+                    if [ -f changelog_release.md ]; then
+                        echo "$initial_changelog" > changelog_release.md
+                        echo "Changelog restored."
+                    fi
+                    ;;
+                restore_version)
+                    if [ -f version.json ]; then
+                        echo "$initial_version" > version.json
+                        echo "Version file restored."
+                    fi
+                    ;;
+                checkout_original_branch)
+                    if [ "$(git branch --show-current)" != "$initial_branch" ]; then
+                        git checkout $initial_branch
+                        echo "Checked out original branch: $initial_branch."
+                    fi
+                    ;;
+                reset_commit)
+                    # Check if we've already undone this through warn_push
+                    if [ $commit_pushed -eq 1 ]; then
+                        echo "Skipping reset as commit will be handled by warn_push operation."
+                        continue
+                    fi
+                    git reset --hard HEAD^ 2>/dev/null || true
+                    echo "Last commit reset."
+                    ;;
+                warn_push)
+                    if [ $commit_pushed -eq 1 ]; then
+                        echo "Reverting to the commit before the push..."
+                        git reset --hard HEAD^
+                        git push --force-with-lease || echo "Warning: force-push failed. Manual intervention may be required."
+                        echo "Force-pushed branch to remove last commit from remote."
+                    else
+                        echo "Warning: git push was performed. Manual intervention may be required to undo remote changes."
+                    fi
+                    ;;
+                warn_pr_main)
+                    echo "Warning: Pull request was created for main. Please close it manually if not needed."
+                    ;;
+                warn_pr_develop)
+                    echo "Warning: Pull request was created for develop. Please close it manually if not needed."
+                    ;;
+            esac
+        done
         exit 1
     fi
 }
 
-# Set up error handling
 trap cleanup EXIT
 
 # Check that there are no uncommitted changes
@@ -60,6 +89,7 @@ if [[ $current_branch != "hotfix/"* ]]; then
         exit 1
     fi
     git checkout $branch_name || exit 1
+    operation_history+=(checkout_original_branch)
 else
     hotfix_name=${current_branch#hotfix/}
     branch_name=$current_branch
@@ -71,6 +101,7 @@ git checkout main || exit 1
 git pull || exit 1
 git checkout $branch_name || exit 1
 git rebase main || exit 1
+operation_history+=(checkout_original_branch)
 
 # Read the version number from the file as integers
 version_major=$(jq '.major' version.json)
@@ -88,6 +119,7 @@ cat > version.json << EOF
     "patch": $version_patch
 }
 EOF
+operation_history+=(restore_version)
 
 # Get the description of the hotfix from the user
 read -p "Enter a description of the hotfix to be added to the changelog: " hotfix_description
@@ -97,27 +129,25 @@ cat >> changelog_release.md << EOF
 ## v$version_major.$version_minor.$version_patch
 - $hotfix_description
 EOF
+operation_history+=(restore_changelog)
 
 # Commit the changelog and version.json file
 git add changelog_release.md version.json || exit 1
 git commit -m "Update changelog and version number for hotfix $hotfix_name" || exit 1
+operation_history+=(reset_commit)
+
 git push || exit 1
+operation_history+=(warn_push)
+commit_pushed=1
 
-# Merge the hotfix branch into the main branch
-git checkout main || exit 1
-git pull || exit 1
-git merge --no-ff $branch_name -m "Merge hotfix $hotfix_name into main" || exit 1
-git push || exit 1
+# Create a pull request from the hotfix branch to main
+gh pr create --base main --head $branch_name --title "Merge hotfix $hotfix_name into main" --body "Automated PR for hotfix $hotfix_name" || exit 1
+operation_history+=(warn_pr_main)
 
-# Merge the hotfix branch into the develop branch
-git checkout develop || exit 1
-git pull || exit 1
-git merge --no-ff $branch_name -m "Merge hotfix $hotfix_name into develop" || exit 1
-git push || exit 1
+# Create a pull request from the hotfix branch to develop
+gh pr create --base develop --head $branch_name --title "Merge hotfix $hotfix_name into develop" --body "Automated PR for hotfix $hotfix_name" || exit 1
+operation_history+=(warn_pr_develop)
 
-# Delete the hotfix branch
-git branch -d $branch_name || exit 1
-git push origin --delete $branch_name || exit 1
-
-# If we get here, everything succeeded
-echo "Successfully completed hotfix: $hotfix_name"
+# Inform the user
+echo "Pull requests created for hotfix: $hotfix_name. Please complete the PR merges and branch deletions via the GitHub UI or your automation system."
+echo "Successfully completed hotfix: $hotfix_name (PRs created)"

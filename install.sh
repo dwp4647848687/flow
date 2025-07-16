@@ -38,6 +38,9 @@ else
     exit 1
 fi
 
+# Copy the version file
+cp version.json "$INSTALL_DIR/version.json"
+
 # Verify installation
 if [ ! -f "$SCRIPTS_DIR/complete_release.sh" ]; then
     echo "Error: Required script files not found in $SCRIPTS_DIR"

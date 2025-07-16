@@ -154,5 +154,24 @@ git config core.hooksPath .githooks || exit 1
 git checkout -b develop || exit 1
 git push --set-upstream origin develop || exit 1
 
+# Set branch protection rules using GitHub CLI
+echo "Setting branch protection rules for main and develop using GitHub CLI..."
+repo_json=$(gh repo view --json name,owner)
+repo_owner=$(echo "$repo_json" | jq -r '.owner.login')
+repo_name=$(echo "$repo_json" | jq -r '.name')
+
+for branch in main develop; do
+    gh api \
+      -X PUT \
+      -H "Accept: application/vnd.github+json" \
+      "/repos/$repo_owner/$repo_name/branches/$branch/protection" \
+      -f required_status_checks='null' \
+      -f enforce_admins=true \
+      -f required_pull_request_reviews='{}' \
+      -f restrictions='null' \
+      >/dev/null && \
+    echo "Branch protection enabled for $branch." || echo "Error: Failed to set branch protection for $branch. Please set manually."
+done
+
 # If we get here, everything succeeded
 echo "Successfully initialized repository for use with flow"
