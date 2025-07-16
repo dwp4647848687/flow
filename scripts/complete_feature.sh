@@ -7,29 +7,52 @@ set -e
 initial_branch=$(git branch --show-current)
 initial_changelog=$(cat changelog_develop.md 2>/dev/null || echo "")
 
+# Operation history for robust cleanup
+operation_history=()
+commit_pushed=0
+
 # Function to clean up on error
 cleanup() {
     if [ $? -ne 0 ]; then
         echo "Error occurred. Cleaning up..."
-        
-        # Restore changelog if it was modified
-        if [ -f changelog_develop.md ]; then
-            echo "$initial_changelog" > changelog_develop.md
-        fi
-        
-        # Abort any in-progress merge
-        git merge --abort 2>/dev/null || true
-        
-        # If we switched branches, go back to the original
-        if [ "$(git branch --show-current)" != "$initial_branch" ]; then
-            git checkout $initial_branch
-        fi
-        
-        # If we created a commit, try to reset it
-        if [ -n "$feature_name" ]; then
-            git reset --hard HEAD^ 2>/dev/null || true
-        fi
-        
+        for (( idx=${#operation_history[@]}-1 ; idx>=0 ; idx-- )) ; do
+            op="${operation_history[$idx]}"
+            case $op in
+                restore_changelog)
+                    if [ -f changelog_develop.md ]; then
+                        echo "$initial_changelog" > changelog_develop.md
+                        echo "Changelog restored."
+                    fi
+                    ;;
+                checkout_original_branch)
+                    if [ "$(git branch --show-current)" != "$initial_branch" ]; then
+                        git checkout $initial_branch
+                        echo "Checked out original branch: $initial_branch."
+                    fi
+                    ;;
+                reset_commit)
+                    # Check if we've already undone this through warn_push
+                    if [ $commit_pushed -eq 1 ]; then
+                        echo "Skipping reset as commit will be handled by warn_push operation."
+                        continue
+                    fi
+                    git reset --hard HEAD^ 2>/dev/null || true
+                    echo "Last commit reset."
+                    ;;
+                warn_push)
+                    # If a commit was pushed, force-push after reset
+                    if [ $commit_pushed -eq 1 ]; then
+                        # Revert to the commit before the push
+                        echo "Reverting to the commit before the push..."
+                        git reset --hard HEAD^
+                        git push --force-with-lease || echo "Warning: force-push failed. Manual intervention may be required."
+                        echo "Force-pushed branch to remove last commit from remote."
+                    else
+                        echo "Warning: git push was performed. Manual intervention may be required to undo remote changes."
+                    fi
+                    ;;
+            esac
+        done
         exit 1
     fi
 }
@@ -54,6 +77,7 @@ if [[ $current_branch != "feature/"* ]]; then
         exit 1
     fi
     git checkout $branch_name || exit 1
+    operation_history+=(checkout_original_branch)
 else
     feature_name=${current_branch#feature/}
     branch_name=$current_branch
@@ -65,6 +89,7 @@ git checkout develop || exit 1
 git pull || exit 1
 git checkout $branch_name || exit 1
 git rebase develop || exit 1
+operation_history+=(checkout_original_branch)
 
 # Get description of the feature from the user
 read -p "Enter a description of the feature to be added to the changelog: " feature_description
@@ -73,21 +98,23 @@ read -p "Enter a description of the feature to be added to the changelog: " feat
 cat >> changelog_develop.md << EOF
 - $feature_description
 EOF
+operation_history+=(restore_changelog)
 
 # Commit the changelog file
 git add changelog_develop.md || exit 1
 git commit -m "Update changelog for feature $feature_name" || exit 1
-git push || exit 1
+operation_history+=(reset_commit)
 
-# Merge the feature branch into the develop branch
-git checkout develop || exit 1
-git pull || exit 1
-git merge --no-ff $branch_name -m "Merge feature $feature_name into develop" || exit 1
+# Push the branch and mark that a commit was pushed
 git push || exit 1
+operation_history+=(warn_push)
+commit_pushed=1
 
-# Delete the feature branch
-git branch -d $branch_name || exit 1
-git push origin --delete $branch_name || exit 1
+# Create a pull request from the feature branch to develop
+gh pr create --base develop --head $branch_name --title "Merge feature $feature_name into develop" --body "Automated PR for feature $feature_name" || exit 1
+
+# Inform the user
+echo "Pull request created for feature: $feature_name. Please complete the PR merge and branch deletion via the GitHub UI or your automation system."
 
 # If we get here, everything succeeded
-echo "Successfully completed feature: $feature_name"
+echo "Successfully completed feature: $feature_name (PR created)"

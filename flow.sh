@@ -39,8 +39,11 @@ show_command_help() {
             echo
             echo "flow feature complete"
             echo "Completes a feature:"
-            echo "- Merges the feature branch into develop"
+            echo "- Rebases the feature branch onto develop"
             echo "- Updates the development changelog"
+            echo "- Pushes the branch and changelog"
+            echo "- Creates a pull request (PR) to merge the feature into develop"
+            echo "- You must complete the PR merge and branch deletion via the GitHub UI or automation"
             ;;
         "hotfix")
             echo "flow hotfix begin"
@@ -50,8 +53,11 @@ show_command_help() {
             echo
             echo "flow hotfix complete"
             echo "Completes a hotfix:"
-            echo "- Merges the hotfix branch into main and develop"
-            echo "- Updates the release changelog"
+            echo "- Rebases the hotfix branch onto main"
+            echo "- Updates the release changelog and version"
+            echo "- Pushes the branch and changelog/version"
+            echo "- Creates pull requests (PRs) to merge the hotfix into main and develop"
+            echo "- You must complete the PR merges and branch deletion via the GitHub UI or automation"
             ;;
         "release")
             echo "flow release begin"
@@ -62,8 +68,9 @@ show_command_help() {
             echo
             echo "flow release complete"
             echo "Completes a release:"
-            echo "- Merges the release branch into main and develop"
-            echo "- Creates a new tag"
+            echo "- Pushes the release branch"
+            echo "- Creates a pull request (PR) to merge the release into main"
+            echo "- You must complete the PR merge, create the release tag, and delete the branch via the GitHub UI or automation"
             ;;
         *)
             show_help
@@ -77,6 +84,24 @@ print_version() {
     version_patch=$(jq -r '.patch' "$INSTALL_DIR/version.json")
     echo "Flow v$version_major.$version_minor.$version_patch"
 }
+
+# Check that git is installed
+if ! command -v git &> /dev/null; then
+    echo "Error: git is not installed. Please install it using your package manager."
+    exit 1
+fi
+
+# Check that jq is installed
+if ! command -v jq &> /dev/null; then
+    echo "Error: jq is not installed. Please install it using your package manager."
+    exit 1
+fi
+
+# Check that the Github CLI is installed
+if ! command -v gh &> /dev/null; then
+    echo "Error: GitHub CLI (gh) is not installed. Please install it using your package manager."
+    exit 1
+fi
 
 # Get the directory where the script is located
 if [ -L "$0" ]; then
@@ -149,6 +174,8 @@ case "$1" in
         print_version
         ;;
     *)
+        echo "Error: Unknown command: $1"
+        echo
         show_help
         exit 1
         ;;
