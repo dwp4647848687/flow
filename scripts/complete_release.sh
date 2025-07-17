@@ -75,8 +75,13 @@ pr_body="Automated PR for release v$version_major.$version_minor.$version_patch"
 gh pr create --base main --head $current_branch --title "$pr_title" --body "$pr_body" || exit 1
 operation_history+=(warn_pr_main)
 
-# Inform the user
+# Create a pull request from the release branch to develop
+pr_title="Release v$version_major.$version_minor.$version_patch"
+pr_body="Automated PR for release v$version_major.$version_minor.$version_patch"
+gh pr create --base develop --head $current_branch --title "$pr_title" --body "$pr_body" || exit 1
+operation_history+=(warn_pr_develop)
 
+# Inform the user
 echo "Pull request created for release: v$version_major.$version_minor.$version_patch."
 echo "After the PR is merged into main, create the tag and delete the release branch as appropriate."
 echo "Successfully completed release: v$version_major.$version_minor.$version_patch (PR created)" 
