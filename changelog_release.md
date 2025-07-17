@@ -19,3 +19,4 @@
 - Improved rebase merge conflict handling
 - Fixed bug causing problems if flow was not run from the repo root directory
 - Fixed bug where release branches weren't being merged back into develop
+## v0.5.0
