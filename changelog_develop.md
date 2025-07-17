@@ -2,3 +2,4 @@
 - Added a command to print the current version of flow
 - Use pull requests for merging into main and develop
 - Improved rebase merge conflict handling
+- Fix bug where release branches weren't being merged back into develop
