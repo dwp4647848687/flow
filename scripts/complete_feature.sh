@@ -88,7 +88,9 @@ echo "Rebasing feature branch from latest develop..."
 git checkout develop || exit 1
 git pull || exit 1
 git checkout $branch_name || exit 1
-rebased=false
+
+beforeRebaseHash=$(git rev-parse HEAD)
+
 git rebase develop || {
     echo "Merge conflicts detected during rebase. Please resolve them manually."
     while true; do
@@ -98,11 +100,17 @@ git rebase develop || {
         if [ -d ".git/rebase-merge" ] || [ -d ".git/rebase-apply" ]; then
             echo "Rebase is still in progress. Please complete it before continuing."
         else
-            rebased=true
             break
         fi
     done
 }
+afterRebaseHash=$(git rev-parse HEAD)
+
+rebased=false
+if [ "$beforeRebaseHash" != "$afterRebaseHash" ]; then
+    rebased=true
+fi
+
 operation_history+=(checkout_original_branch)
 
 # Get description of the feature from the user
