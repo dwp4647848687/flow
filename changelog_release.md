@@ -19,3 +19,5 @@
 - Improved rebase merge conflict handling
 - Fixed bug causing problems if flow was not run from the repo root directory
 - Fixed bug where release branches weren't being merged back into develop
+## v0.4.1
+- Fixed bug that would cause feature/hotfix completion to fail sometimes when rebasing was required
