@@ -100,7 +100,8 @@ echo "Rebasing hotfix branch from latest main..."
 git checkout main || exit 1
 git pull || exit 1
 git checkout $branch_name || exit 1
-rebased=false
+
+beforeRebaseHash=$(git rev-parse HEAD)
 git rebase main || {
     echo "Merge conflicts detected during rebase. Please resolve them manually."
     while true; do
@@ -110,11 +111,17 @@ git rebase main || {
         if [ -d ".git/rebase-merge" ] || [ -d ".git/rebase-apply" ]; then
             echo "Rebase is still in progress. Please complete it before continuing."
         else
-            rebased=true
             break
         fi
     done
 }
+afterRebaseHash=$(git rev-parse HEAD)
+
+rebased=false
+if [ "$beforeRebaseHash" != "$afterRebaseHash" ]; then
+    rebased=true
+fi
+
 operation_history+=(checkout_original_branch)
 
 # Read the version number from the file as integers
